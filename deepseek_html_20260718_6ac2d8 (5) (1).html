@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brawl Stars 3D — Полная версия</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; }
+        body {
+            background: #0a0a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameWrapper {
+            position: relative;
+            border: 4px solid #f0c040;
+            border-radius: 16px;
+            box-shadow: 0 0 60px rgba(240, 192, 64, 0.25);
+            background: #1a2a1a;
+            overflow: hidden;
+            width: 1000px;
+            max-width: 100vw;
+            max-height: 100vh;
+            height: 660px;
+            touch-action: none;
+        }
+        #gameCanvas {
+            display: block;
+            background: #2a4a2a;
+            width: 1000px;
+            height: 660px;
+            touch-action: none;
+        }
+        #gameCanvas:focus { outline: none; }
+
+        #lobbyOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.95);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        #lobbyOverlay.hidden { display: none; }
+
+        #lobbyHeader {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        #lobbyTitle {
+            font-size: 22px;
+            font-weight: 900;
+            background: linear-gradient(180deg, #ffe066, #f0a030);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+        #lobbyResources {
+            display: flex;
+            gap: 12px;
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+        #lobbyResources span { display: flex; align-items: center; gap: 4px; }
+        .res-icon { font-size: 16px; }
+        .res-value { color: white; font-weight: 700; }
+
+        #lobbyTabs {
+            display: flex;
+            gap: 2px;
+            padding: 0 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .lobby-tab {
+            padding: 10px 14px;
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: inherit;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
+        .lobby-tab:hover { color: rgba(255,255,255,0.7); }
+        .lobby-tab.active { color: #f0c040; border-bottom-color: #f0c040; }
+        .lobby-tab .badge {
+            background: #ff4444;
+            color: white;
+            font-size: 10px;
+            padding: 1px 8px;
+            border-radius: 12px;
+            margin-left: 6px;
+            font-weight: 700;
+        }
+
+        #lobbyContent {
+            flex: 1;
+            padding: 16px 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+        #lobbyContent::-webkit-scrollbar { width: 4px; }
+        #lobbyContent::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        #lobbyContent::-webkit-scrollbar-thumb { background: rgba(240, 192, 64, 0.3); border-radius: 4px; }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        #tabPlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 12px;
+        }
+        #tabPlay .mode-title { font-size: 24px; color: white; font-weight: 700; }
+        #tabPlay .mode-desc { color: rgba(255,255,255,0.4); font-size: 14px; text-align: center; }
+        #tabPlay .mode-selector {
+            display: flex;
+            gap: 12px;
+            margin: 6px 0;
+        }
+        #tabPlay .mode-btn {
+            padding: 8px 24px;
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            font-family: inherit;
+        }
+        #tabPlay .mode-btn:hover { background: rgba(255,255,255,0.1); }
+        #tabPlay .mode-btn.active {
+            border-color: #f0c040;
+            color: #f0c040;
+            background: rgba(240, 192, 64, 0.1);
+        }
+
+        #playMatchBtn {
+            background: linear-gradient(180deg, #f5d742, #d4a020);
+            border: none;
+            border-radius: 16px;
+            padding: 14px 40px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #3a2a0a;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 6px 0 #8a6a10, 0 8px 20px rgba(0,0,0,0.4);
+            margin-top: 10px;
+            touch-action: manipulation;
+        }
+        #playMatchBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #8a6a10, 0 12px 30px rgba(240, 192, 64, 0.3); }
+        #playMatchBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #8a6a10; }
+        #playMatchBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        #selectedBrawlerDisplay2 { color: rgba(255,255,255,0.3); font-size: 14px; }
+        #selectedBrawlerDisplay2 span { color: #f0c040; font-weight: 700; }
+
+        .brawlers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .brawler-card2 {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            cursor: default;
+        }
+        .brawler-card2 .preview2 {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .brawler-card2 .preview2.shelly2 { background: radial-gradient(circle, #f5c842, #b8821a); }
+        .brawler-card2 .preview2.sharang2 { background: radial-gradient(circle, #ff44ff, #8822aa); }
+        .brawler-card2 .preview2.mystery { 
+            background: radial-gradient(circle, #444, #222);
+            border-color: rgba(255,215,0,0.3);
+        }
+        .brawler-card2 .name2 { color: white; font-size: 15px; font-weight: 700; }
+        .brawler-card2 .rarity2 { font-size: 11px; margin-top: 2px; }
+        .brawler-card2 .stats2 { font-size: 11px; color: rgba(255,255,255,0.2); margin-top: 4px; }
+        .brawler-card2 .level-display { 
+            font-size: 12px; 
+            color: #f0c040; 
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .brawler-card2 .locked-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            backdrop-filter: blur(2px);
+        }
+        .brawler-card2 .locked-overlay .lock-icon { font-size: 24px; }
+        .brawler-card2 .locked-overlay .lock-text { color: rgba(255,255,255,0.4); font-size: 10px; }
+        .brawler-card2.selected2 { border-color: #f0c040; background: rgba(240, 192, 64, 0.1); box-shadow: 0 0 20px rgba(240, 192, 64, 0.1); }
+        .brawler-card2 .select-btn2 {
+            margin-top: 8px;
+            padding: 4px 16px;
+            border-radius: 20px;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.4);
+            touch-action: manipulation;
+        }
+        .brawler-card2 .select-btn2:hover { background: rgba(255,255,255,0.2); }
+        .brawler-card2 .select-btn2.active2 { background: #f0c040; color: #3a2a0a; }
+        .brawler-card2 .select-btn2.active2:hover { background: #e0b030; }
+
+        .upgrade-btn {
+            margin-top: 6px;
+            padding: 3px 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(180deg, #44bb44, #228822);
+            color: white;
+            touch-action: manipulation;
+        }
+        .upgrade-btn:hover { transform: scale(1.05); }
+        .upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .upgrade-btn.max-level { background: linear-gradient(180deg, #ffd700, #cc9900); color: #3a2a0a; }
+
+        .star-powers {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        .star-power-badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            background: rgba(255,215,0,0.15);
+            border: 1px solid rgba(255,215,0,0.2);
+            color: #ffd700;
+        }
+        .star-power-badge.unlocked { background: rgba(255,215,0,0.3); border-color: #ffd700; }
+        .hypercharge-badge {
+            font-size: 9px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: rgba(255,50,255,0.15);
+            border: 1px solid rgba(255,50,255,0.3);
+            color: #ff44ff;
+        }
+        .hypercharge-badge.unlocked { background: rgba(255,50,255,0.3); border-color: #ff44ff; }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            justify-content: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .shop-item {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .shop-item:hover { transform: translateY(-4px); border-color: rgba(240, 192, 64, 0.3); }
+        .shop-item .icon { font-size: 48px; margin-bottom: 6px; display: block; }
+        .shop-item .name { color: white; font-size: 16px; font-weight: 700; }
+        .shop-item .price { color: rgba(255,255,255,0.3); font-size: 14px; margin: 6px 0 12px; }
+        .shop-item .buy-btn {
+            padding: 8px 32px;
+            border-radius: 20px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(180deg, #f5d742, #d4a020);
+            color: #3a2a0a;
+            touch-action: manipulation;
+        }
+        .shop-item .buy-btn:hover { transform: scale(1.05); }
+        .shop-item .buy-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+        .chests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+        }
+        .chest-item {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .chest-item:hover { transform: translateY(-4px); border-color: rgba(240, 192, 64, 0.3); }
+        .chest-item .chest-icon { font-size: 40px; display: block; margin-bottom: 4px; }
+        .chest-item .chest-name { color: white; font-size: 14px; font-weight: 600; }
+        .chest-item .chest-desc { color: rgba(255,255,255,0.3); font-size: 11px; margin: 4px 0 8px; }
+        .chest-item .open-btn {
+            padding: 6px 24px;
+            border-radius: 20px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(180deg, #f5d742, #d4a020);
+            color: #3a2a0a;
+            touch-action: manipulation;
+        }
+        .chest-item .open-btn:hover { transform: scale(1.05); }
+        .chest-item .open-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .chest-item .chest-count { color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 4px; }
+
+        #chestOpenOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.92);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+        #chestOpenOverlay.show { display: flex; }
+        #chestOpenOverlay .chest-big { font-size: 80px; animation: chestBounce 0.8s ease infinite; }
+        @keyframes chestBounce {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            75% { transform: scale(1.1) rotate(5deg); }
+        }
+        #chestOpenOverlay .chest-result {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 20px;
+            text-align: center;
+            opacity: 0;
+            animation: resultReveal 0.5s ease 0.8s forwards;
+            max-width: 80%;
+        }
+        @keyframes resultReveal {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        #chestOpenOverlay .chest-result .highlight { color: #f0c040; }
+        #chestOpenOverlay .chest-result .rare { color: #ff44ff; }
+        #chestOpenOverlay .chest-result .new-brawler { 
+            color: #ffd700; 
+            font-size: 28px;
+            animation: winPulse 1s ease infinite;
+        }
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); text-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+        }
+        #chestOpenOverlay .chest-close-btn {
+            margin-top: 30px;
+            padding: 12px 40px;
+            border-radius: 16px;
+            border: none;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            transition: all 0.2s;
+            display: none;
+            touch-action: manipulation;
+        }
+        #chestOpenOverlay .chest-close-btn:hover { background: rgba(255,255,255,0.2); }
+        #chestOpenOverlay .chest-close-btn.show { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #gameOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+        #gameOverlay.show { display: block; }
+        #gameOverlay .ui-top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 16px;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+        }
+        #gameOverlay .ui-top-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 13px;
+            text-align: right;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+        #gameOverlay .ui-bottom {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 15px;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.6);
+            padding: 4px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        #gameOverlay .ui-bottom .count { color: #ff6644; font-weight: bold; font-size: 18px; }
+        #gameOverlay .controls-hint {
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.15);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 0 #000;
+        }
+        #gameOverlay .gas-warning {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6644;
+            font-size: 22px;
+            font-weight: 900;
+            text-shadow: 0 0 30px rgba(255,50,0,0.5), 2px 2px 0 #000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        #gameOverlay .gas-warning.show { opacity: 1; }
+        #gameOverlay .hp-bar {
+            background: rgba(0,0,0,0.7);
+            padding: 2px 12px;
+            border-radius: 16px;
+            display: inline-block;
+            margin-top: 2px;
+            font-size: 15px;
+        }
+        #gameOverlay .hp-bar span { color: #ff4444; font-weight: bold; }
+
+        #touchControls {
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            pointer-events: none;
+            z-index: 20;
+            display: none;
+            touch-action: none;
+        }
+        #touchControls.show {
+            display: block;
+            pointer-events: auto;
+        }
+
+        #joystickArea {
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            touch-action: none;
+            pointer-events: auto;
+        }
+        #joystickKnob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.6), rgba(255,255,255,0.2));
+            transform: translate(-50%, -50%);
+            touch-action: none;
+            pointer-events: none;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        #joystickKnob::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+        }
+
+        #shootButton {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffdd44, #d4a020);
+            border: 3px solid rgba(255,255,255,0.3);
+            color: #3a2a0a;
+            font-size: 28px;
+            font-weight: 900;
+            cursor: pointer;
+            touch-action: manipulation;
+            pointer-events: auto;
+            box-shadow: 0 4px 0 #8a6a10, 0 8px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #shootButton:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 0 #8a6a10, 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #touchHint {
+            position: absolute;
+            bottom: 210px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.15);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 0 #000;
+            pointer-events: none;
+            z-index: 15;
+            display: none;
+            white-space: nowrap;
+        }
+        #touchHint.show { display: block; }
+
+        #defeatOverlay, #winOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.92);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 90;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease;
+            padding: 20px;
+        }
+        #defeatOverlay.show, #winOverlay.show { display: flex; }
+        #defeatTitle {
+            font-size: 56px;
+            font-weight: 900;
+            color: #ff4444;
+            text-shadow: 0 0 60px rgba(255, 50, 50, 0.4), 0 4px 0 #6a1515;
+            margin-bottom: 4px;
+            animation: shake 0.6s ease;
+            text-align: center;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+        #winTitle {
+            font-size: 56px;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 60px rgba(255, 215, 0, 0.4), 0 4px 0 #8a7a00;
+            margin-bottom: 4px;
+            animation: winPulse 1.5s ease infinite;
+            text-align: center;
+        }
+        #defeatSub, #winSub {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 16px;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        #defeatStats, #winStats {
+            color: white;
+            font-size: 18px;
+            margin: 10px 0 20px;
+            text-align: center;
+            line-height: 1.8;
+            background: rgba(0,0,0,0.4);
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .defeat-btn-group, .win-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 260px;
+        }
+        .defeat-btn-group .menu-btn, .win-btn-group .menu-btn {
+            width: 100%;
+            padding: 12px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 6px 0 #8a6a10, 0 8px 20px rgba(0,0,0,0.4);
+            text-align: center;
+            letter-spacing: 1px;
+            touch-action: manipulation;
+        }
+        .defeat-btn-group .menu-btn {
+            background: linear-gradient(180deg, #f5d742, #d4a020);
+            color: #3a2a0a;
+        }
+        .defeat-btn-group .menu-btn.secondary {
+            background: linear-gradient(180deg, #4a6a8a, #2a4a6a);
+            color: white;
+            box-shadow: 0 6px 0 #1a2a3a;
+        }
+        .win-btn-group .menu-btn {
+            background: linear-gradient(180deg, #50e050, #20a020);
+            color: white;
+            box-shadow: 0 6px 0 #156a15;
+        }
+        .win-btn-group .menu-btn.secondary {
+            background: linear-gradient(180deg, #4a6a8a, #2a4a6a);
+            color: white;
+            box-shadow: 0 6px 0 #1a2a3a;
+        }
+        .menu-btn:hover { transform: translateY(-2px); }
+        .menu-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #8a6a10; }
+
+        #movementDebug {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6644;
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 6px 12px;
+            border-radius: 10px;
+            z-index: 50;
+            display: none;
+            font-family: monospace;
+            pointer-events: none;
+        }
+
+        #saveStatus {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #44ff44;
+            font-size: 16px;
+            font-weight: 700;
+            background: rgba(0,0,0,0.8);
+            padding: 6px 20px;
+            border-radius: 20px;
+            z-index: 60;
+            display: none;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        #saveInfo {
+            position: absolute;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.15);
+            font-size: 11px;
+            z-index: 50;
+            pointer-events: none;
+            letter-spacing: 1px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        @media (max-width: 768px) {
+            #gameWrapper {
+                border-width: 2px;
+                border-radius: 8px;
+                height: 100vh;
+                max-height: 100vh;
+                width: 100vw;
+                max-width: 100vw;
+            }
+            #gameCanvas { width: 100%; height: 100%; }
+            #lobbyHeader { padding: 8px 12px; }
+            #lobbyTitle { font-size: 18px; }
+            #lobbyResources { font-size: 12px; gap: 8px; }
+            #lobbyTabs { padding: 0 8px; }
+            .lobby-tab { padding: 8px 10px; font-size: 11px; }
+            #lobbyContent { padding: 12px 14px; }
+            #tabPlay .mode-title { font-size: 20px; }
+            #tabPlay .mode-desc { font-size: 13px; }
+            #playMatchBtn { padding: 12px 30px; font-size: 18px; }
+            #defeatTitle, #winTitle { font-size: 40px; }
+            #defeatStats, #winStats { font-size: 16px; padding: 10px 16px; }
+            #touchControls.show { display: block; }
+            #touchHint.show { display: block; }
+            #joystickArea { width: 110px; height: 110px; left: 12px; bottom: 10px; }
+            #joystickKnob { width: 40px; height: 40px; }
+            #shootButton { width: 60px; height: 60px; font-size: 22px; right: 16px; bottom: 16px; }
+            #gameOverlay .ui-top-left { font-size: 13px; top: 6px; left: 6px; }
+            #gameOverlay .ui-top-right { font-size: 11px; top: 6px; right: 6px; padding: 4px 10px; }
+            #gameOverlay .ui-bottom { font-size: 13px; bottom: 200px; padding: 4px 12px; }
+            #gameOverlay .ui-bottom .count { font-size: 16px; }
+            #gameOverlay .controls-hint { display: none; }
+            #gameOverlay .hp-bar { font-size: 13px; padding: 2px 10px; }
+            #gameOverlay .gas-warning { font-size: 18px; bottom: 230px; }
+            .brawlers-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .shop-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+            #saveStatus { font-size: 13px; padding: 4px 14px; bottom: 120px; }
+            #saveInfo { font-size: 10px; bottom: 160px; }
+        }
+
+        @media (max-width: 480px) {
+            #joystickArea { width: 90px; height: 90px; left: 8px; bottom: 8px; }
+            #joystickKnob { width: 34px; height: 34px; }
+            #shootButton { width: 50px; height: 50px; font-size: 18px; right: 12px; bottom: 12px; }
+            #gameOverlay .ui-bottom { bottom: 160px; font-size: 11px; padding: 3px 10px; }
+            #gameOverlay .gas-warning { bottom: 190px; font-size: 16px; }
+            #defeatTitle, #winTitle { font-size: 32px; }
+            .brawlers-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+            .shop-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+            #saveStatus { font-size: 11px; padding: 3px 10px; bottom: 100px; }
+            #saveInfo { font-size: 9px; bottom: 140px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <div id="gameCanvas" tabindex="0"></div>
+    <div id="movementDebug">⬆️ ⬇️ ⬅️ ➡️</div>
+
+    <div id="saveStatus"></div>
+    <div id="saveInfo">💾 Прогресс автоматически сохраняется</div>
+
+    <div id="touchControls">
+        <div id="joystickArea">
+            <div id="joystickKnob"></div>
+        </div>
+        <button id="shootButton">🔫</button>
+    </div>
+    <div id="touchHint">👆 Перемещай джойстик • 🔫 Стреляй</div>
+
+    <div id="lobbyOverlay">
+        <div id="lobbyHeader">
+            <div id="lobbyTitle">⚔️ BRAWL STARS</div>
+            <div id="lobbyResources">
+                <span><span class="res-icon">🪙</span> <span class="res-value" id="resCoins">0</span></span>
+                <span><span class="res-icon">⭐</span> <span class="res-value" id="resPower">0</span></span>
+                <span><span class="res-icon">🎁</span> <span class="res-value" id="resChests">0</span></span>
+            </div>
+        </div>
+
+        <div id="lobbyTabs">
+            <button class="lobby-tab active" data-tab="play" id="tabPlayBtn">🎮 Игра</button>
+            <button class="lobby-tab" data-tab="brawlers" id="tabBrawlersBtn">👥 Бойцы</button>
+            <button class="lobby-tab" data-tab="shop" id="tabShopBtn">🛒 Магазин</button>
+            <button class="lobby-tab" data-tab="chests" id="tabChestsBtn">🎁 Ящики <span class="badge" id="chestBadge">0</span></button>
+        </div>
+
+        <div id="lobbyContent">
+            <div class="tab-content active" id="tabPlay">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;">
+                    <div class="mode-title">🏆 Выбери режим</div>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" data-mode="showdown">🏆 Showdown</button>
+                        <button class="mode-btn" data-mode="duel">⚔️ Дуэль 1v1</button>
+                    </div>
+                    <div class="mode-desc" id="modeDesc">Королевская битва — убей всех врагов и стань чемпионом!</div>
+                    <div id="selectedBrawlerDisplay2">Выбран боец: <span id="lobbySelectedBrawler">ШЕЛЛИ</span></div>
+                    <button id="playMatchBtn">▶ ИГРАТЬ</button>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tabBrawlers">
+                <div class="brawlers-grid" id="brawlersGrid"></div>
+            </div>
+
+            <div class="tab-content" id="tabShop">
+                <div class="shop-grid">
+                    <div class="shop-item">
+                        <span class="icon">🎁</span>
+                        <div class="name">Ящик</div>
+                        <div class="price">💰 100 монет</div>
+                        <button class="buy-btn" data-shop="chest">Купить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tabChests">
+                <div class="chests-grid">
+                    <div class="chest-item" id="chestOpenBtn">
+                        <span class="chest-icon">🎁</span>
+                        <div class="chest-name">Обычный ящик</div>
+                        <div class="chest-desc">Шанс выпадения легендарного бойца</div>
+                        <button class="open-btn">Открыть</button>
+                        <div class="chest-count">Доступно: <span id="chestCountDisplay">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chestOpenOverlay">
+        <div class="chest-big">🎁</div>
+        <div class="chest-result" id="chestResult"></div>
+        <button class="chest-close-btn" id="chestCloseBtn">Отлично!</button>
+    </div>
+
+    <div id="gameOverlay">
+        <div class="ui-top-left">
+            <div>⚔️ Brawl Stars 3D</div>
+            <div class="hp-bar">❤️ HP: <span id="gameHp">10000</span></div>
+        </div>
+        <div class="ui-top-right">
+            <div>🎯 Убийств: <span style="color:#f0c040;font-weight:700;" id="gameKills">0</span></div>
+            <div>👾 Осталось: <span style="color:#ff6644;font-weight:700;" id="gameEnemies">11</span></div>
+        </div>
+        <div class="gas-warning" id="gameGasWarning">☠️ ГАЗ СЖИМАЕТСЯ!</div>
+        <div class="ui-bottom">
+            👾 Врагов осталось: <span class="count" id="gameEnemiesBottom">11</span>
+        </div>
+        <div class="controls-hint">🖱️ ЛКМ — Стрельба &nbsp;|&nbsp; ⬆️⬇️⬅️➡️ — Движение &nbsp;|&nbsp; ESC — Выйти</div>
+    </div>
+
+    <div id="defeatOverlay">
+        <div id="defeatTitle">💀 ПОРАЖЕНИЕ</div>
+        <div id="defeatSub">Ты не справился...</div>
+        <div id="defeatStats">
+            🎯 Убийств: <span class="kills-num" id="defeatKills">0</span><br>
+            🏆 Место: <span class="highlight" id="defeatRank">#1</span>
+        </div>
+        <div class="defeat-btn-group">
+            <button class="menu-btn" id="defeatRetryBtn">🔄 Играть снова</button>
+            <button class="menu-btn secondary" id="defeatMenuBtn">🏠 В лобби</button>
+        </div>
+    </div>
+
+    <div id="winOverlay">
+        <div id="winTitle">🏆 ПОБЕДА!</div>
+        <div id="winSub">Ты стал чемпионом!</div>
+        <div id="winStats">
+            🎯 Убийств: <span class="kills-num" id="winKills">11</span><br>
+            🏆 Место: <span class="highlight">#1</span>
+        </div>
+        <div class="win-btn-group">
+            <button class="menu-btn" id="winRetryBtn">🔄 Играть снова</button>
+            <button class="menu-btn secondary" id="winMenuBtn">🏠 В лобби</button>
+        </div>
+    </div>
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+}
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    // ============================================================
+    //  ⚡ BRAWL STARS 3D — ОДИН ФАЙЛ (РАБОЧАЯ ВЕРСИЯ)
+    // ============================================================
+
+    console.log('🚀 Инициализация игры...');
+
+    // ============================================================
+    //  ⭐ ДАННЫЕ ИГРОКА
+    // ============================================================
+    const SAVE_KEY = 'brawlStarsSave';
+
+    let playerData = {
+        coins: 0,
+        powerPoints: 0,
+        chests: 0,
+        ownedBrawlers: ['shelly'],
+        selectedBrawler: 'shelly',
+        brawlerStats: {},
+        brawlerLevels: {},
+        brawlerStarPowers: {},
+        brawlerHypercharge: {}
+    };
+
+    // ============================================================
+    //  ⭐ СИСТЕМА ПРОКАЧКИ
+    // ============================================================
+    const LEVELS = 11;
+    const HP_PER_LEVEL = 0.05;
+    const SPEED_PER_LEVEL = 0.005;
+    const UPGRADE_COST = [0, 20, 35, 50, 70, 100, 140, 190, 250, 330, 420];
+
+    const STAR_POWERS = [
+        { id: 'sp_1', name: 'Быстрый заряд', desc: 'Скорость перезарядки +15%', icon: '⚡' },
+        { id: 'sp_2', name: 'Щит', desc: 'Получает щит при уроне', icon: '🛡️' },
+        { id: 'sp_3', name: 'Дополнительный урон', desc: 'Урон +10%', icon: '💥' },
+        { id: 'sp_4', name: 'Регенерация', desc: 'Восстанавливает HP каждые 3с', icon: '❤️' },
+        { id: 'sp_5', name: 'Ускорение', desc: 'Скорость +8%', icon: '💨' },
+        { id: 'sp_6', name: 'Вампиризм', desc: 'Восстанавливает 10% от урона', icon: '🩸' },
+        { id: 'sp_7', name: 'Снайпер', desc: 'Дальность атаки +20%', icon: '🎯' },
+        { id: 'sp_8', name: 'Танк', desc: 'Максимальное HP +15%', icon: '💪' },
+    ];
+
+    const HYPERCHARGES = [
+        { id: 'hc_1', name: 'Гиперщит', desc: 'Щит +50% на 3с', icon: '✨' },
+        { id: 'hc_2', name: 'Гиперурон', desc: 'Урон +30% на 5с', icon: '🔥' },
+        { id: 'hc_3', name: 'Гиперскорость', desc: 'Скорость +40% на 4с', icon: '⚡' },
+        { id: 'hc_4', name: 'Гиперреген', desc: 'Восстановление 20% HP за 3с', icon: '💚' },
+    ];
+
+    // ============================================================
+    //  ⭐ КАРТЫ
+    // ============================================================
+    const MAPS = [
+        { id: 'forest', name: '🌳 Лесная', color: 0x2a5a2a, groundColor: 0x3a8a3a, fogColor: 0x2a5a2a },
+        { id: 'desert', name: '🏜️ Пустынная', color: 0x8a7a4a, groundColor: 0xbaaa6a, fogColor: 0x8a7a4a },
+        { id: 'snow', name: '❄️ Снежная', color: 0x8aaacc, groundColor: 0xccddff, fogColor: 0x8aaacc },
+    ];
+
+    // ============================================================
+    //  ⭐ ВСЕ БОЙЦЫ
+    // ============================================================
+    const ALL_BRAWLERS = [
+        { id: 'shelly', name: 'ШЕЛЛИ', color: 0xf5c842, baseHp: 10000, baseSpeed: 0.12, unlocked: true, rarity: 'Обычный', icon: '🔫', description: 'Начинающий боец', starPowers: [STAR_POWERS[0], STAR_POWERS[1]], hypercharge: HYPERCHARGES[0] },
+        { id: 'brawler_2', name: '???', color: 0xff4444, baseHp: 8500, baseSpeed: 0.14, unlocked: false, rarity: 'Редкий', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_3', name: '???', color: 0x44ff88, baseHp: 11000, baseSpeed: 0.09, unlocked: false, rarity: 'Редкий', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_4', name: '???', color: 0xff44aa, baseHp: 9500, baseSpeed: 0.13, unlocked: false, rarity: 'Эпический', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_5', name: '???', color: 0xff8844, baseHp: 12000, baseSpeed: 0.08, unlocked: false, rarity: 'Эпический', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_6', name: '???', color: 0xff6633, baseHp: 7800, baseSpeed: 0.15, unlocked: false, rarity: 'Редкий', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_7', name: '???', color: 0x44ff44, baseHp: 10500, baseSpeed: 0.11, unlocked: false, rarity: 'Мифический', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_8', name: '???', color: 0xaa44ff, baseHp: 9000, baseSpeed: 0.14, unlocked: false, rarity: 'Суперредкий', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_9', name: '???', color: 0x44ddff, baseHp: 11500, baseSpeed: 0.09, unlocked: false, rarity: 'Эпический', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'brawler_10', name: '???', color: 0xffdd44, baseHp: 8200, baseSpeed: 0.15, unlocked: false, rarity: 'Редкий', icon: '❓', description: '???', starPowers: [], hypercharge: null },
+        { id: 'sharang', name: 'ШАРАН', color: 0xff44ff, baseHp: 12000, baseSpeed: 0.10, unlocked: false, rarity: 'Легендарный', icon: '👑', description: 'Властелин короны', starPowers: [STAR_POWERS[2], STAR_POWERS[3]], hypercharge: HYPERCHARGES[1] }
+    ];
+
+    // ============================================================
+    //  ⭐ СЕКРЕТНЫЕ ИМЕНА
+    // ============================================================
+    const SECRET_NAMES = ['БОРЕЙ', 'ИГНИС', 'ТЕРРА', 'АКВА', 'ВЕНТУС', 'ЛЮМЕН', 'НОКТУС', 'СПЕКТР', 'ОМЕГА', 'ЗЕФИР'];
+    const SECRET_DESCRIPTIONS = ['Повелитель ветров', 'Мастер огня', 'Страж земли', 'Владыка вод', 'Хранитель неба', 'Сияющий воин', 'Тёмный странник', 'Призрачный охотник', 'Космический боец', 'Буревестник'];
+    const SECRET_ICONS = ['🌪️', '🔥', '🌍', '🌊', '⚡', '✨', '🌙', '👻', '🚀', '🌀'];
+    const SECRET_COLORS = [0xff6644, 0xff4400, 0x66dd44, 0x4488ff, 0xdddd44, 0xffdd88, 0x8844ff, 0x44ffdd, 0xff44aa, 0x44ddff];
+
+    // ============================================================
+    //  ⭐ ШАНСЫ ВЫПАДЕНИЯ
+    // ============================================================
+    const RARITY_CHANCES = { 'Редкий': 0.40, 'Эпический': 0.20, 'Мифический': 0.09, 'Суперредкий': 0.01, 'Легендарный': 0.00001 };
+
+    // ============================================================
+    //  ⭐ ФУНКЦИИ СОХРАНЕНИЯ
+    // ============================================================
+    function saveProgress() {
+        try {
+            const data = {
+                coins: playerData.coins ?? 0,
+                powerPoints: playerData.powerPoints ?? 0,
+                chests: playerData.chests ?? 0,
+                ownedBrawlers: playerData.ownedBrawlers ?? ['shelly'],
+                selectedBrawler: playerData.selectedBrawler ?? 'shelly',
+                brawlerLevels: playerData.brawlerLevels ?? {},
+                brawlerStarPowers: playerData.brawlerStarPowers ?? {},
+                brawlerHypercharge: playerData.brawlerHypercharge ?? {},
+                version: '3.0',
+                timestamp: Date.now()
+            };
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+            return true;
+        } catch (e) { return false; }
+    }
+
+    function loadProgress() {
+        try {
+            const raw = localStorage.getItem(SAVE_KEY);
+            if (!raw) return false;
+            const data = JSON.parse(raw);
+            playerData.coins = data.coins ?? 0;
+            playerData.powerPoints = data.powerPoints ?? 0;
+            playerData.chests = data.chests ?? 0;
+            playerData.ownedBrawlers = data.ownedBrawlers ?? ['shelly'];
+            playerData.selectedBrawler = data.selectedBrawler ?? 'shelly';
+            playerData.brawlerLevels = data.brawlerLevels ?? {};
+            playerData.brawlerStarPowers = data.brawlerStarPowers ?? {};
+            playerData.brawlerHypercharge = data.brawlerHypercharge ?? {};
+            return true;
+        } catch (e) { return false; }
+    }
+
+    function forceSave() { return saveProgress(); }
+
+    function showSaveStatus(msg) {
+        const el = document.getElementById('saveStatus');
+        if (el) {
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+    }
+
+    // ============================================================
+    //  ⭐ АУДИО
+    // ============================================================
+    class AudioManager {
+        constructor() {
+            this.enabled = true;
+            this.ctx = null;
+            try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+        }
+        playShoot() {
+            if (!this.ctx || !this.enabled) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.start(this.ctx.currentTime);
+                osc.stop(this.ctx.currentTime + 0.1);
+            } catch (e) {}
+        }
+        playHit() {
+            if (!this.ctx || !this.enabled) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.start(this.ctx.currentTime);
+                osc.stop(this.ctx.currentTime + 0.15);
+            } catch (e) {}
+        }
+        playKill() {
+            if (!this.ctx || !this.enabled) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.start(this.ctx.currentTime);
+                osc.stop(this.ctx.currentTime + 0.15);
+            } catch (e) {}
+        }
+        playWin() {
+            if (!this.ctx || !this.enabled) return;
+            try {
+                const notes = [523, 659, 784, 1047];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.12);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime + i * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.12 + 0.15);
+                    osc.start(this.ctx.currentTime + i * 0.12);
+                    osc.stop(this.ctx.currentTime + i * 0.12 + 0.15);
+                });
+            } catch (e) {}
+        }
+        playDefeat() {
+            if (!this.ctx || !this.enabled) return;
+            try {
+                const notes = [400, 350, 300, 250];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.15);
+                    gain.gain.setValueAtTime(0.08, this.ctx.currentTime + i * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.15 + 0.15);
+                    osc.start(this.ctx.currentTime + i * 0.15);
+                    osc.stop(this.ctx.currentTime + i * 0.15 + 0.15);
+                });
+            } catch (e) {}
+        }
+        playChestOpen() {
+            if (!this.ctx || !this.enabled) return;
+            try {
+                const notes = [500, 600, 700, 800];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.08);
+                    gain.gain.setValueAtTime(0.08, this.ctx.currentTime + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.08 + 0.1);
+                    osc.start(this.ctx.currentTime + i * 0.08);
+                    osc.stop(this.ctx.currentTime + i * 0.08 + 0.1);
+                });
+            } catch (e) {}
+        }
+    }
+
+    const audio = new AudioManager();
+
+    // ============================================================
+    //  ⭐ ИНИЦИАЛИЗАЦИЯ БОЙЦОВ
+    // ============================================================
+    function initBrawlers() {
+        ALL_BRAWLERS.forEach((b, index) => {
+            if (index >= 1 && index <= 10) {
+                const secretIdx = index - 1;
+                b.name = '???';
+                b.icon = '❓';
+                b.description = '???';
+                b.baseSpeed = 0.08 + Math.random() * 0.07;
+                b.baseHp = 7500 + Math.floor(Math.random() * 5000);
+                b.color = SECRET_COLORS[secretIdx % SECRET_COLORS.length];
+                b.starPowers = [STAR_POWERS[Math.floor(Math.random() * STAR_POWERS.length)], STAR_POWERS[Math.floor(Math.random() * STAR_POWERS.length)]];
+                b.hypercharge = HYPERCHARGES[Math.floor(Math.random() * HYPERCHARGES.length)];
+            }
+            if (b.id === 'sharang') { b.baseSpeed = 0.08 + Math.random() * 0.07; }
+            
+            playerData.brawlerLevels[b.id] = playerData.brawlerLevels[b.id] || 1;
+            playerData.brawlerStarPowers[b.id] = playerData.brawlerStarPowers[b.id] || [];
+            playerData.brawlerHypercharge[b.id] = playerData.brawlerHypercharge[b.id] || false;
+            
+            const level = playerData.brawlerLevels[b.id] || 1;
+            const hpMultiplier = 1 + (level - 1) * HP_PER_LEVEL;
+            const speedMultiplier = 1 + (level - 1) * SPEED_PER_LEVEL;
+            
+            playerData.brawlerStats[b.id] = {
+                hp: Math.floor(b.baseHp * hpMultiplier),
+                speed: Math.round((b.baseSpeed * speedMultiplier) * 1000) / 1000,
+                unlocked: b.unlocked || playerData.ownedBrawlers.includes(b.id),
+                name: b.name,
+                color: b.color,
+                rarity: b.rarity,
+                icon: b.icon,
+                description: b.description,
+                baseHp: b.baseHp,
+                baseSpeed: b.baseSpeed,
+                starPowers: b.starPowers || [],
+                hypercharge: b.hypercharge || null,
+                level: level,
+                maxLevel: LEVELS
+            };
+        });
+    }
+
+    // ============================================================
+    //  ⭐ ФУНКЦИИ ПРОКАЧКИ
+    // ============================================================
+    function getUpgradeCost(brawlerId) {
+        const level = playerData.brawlerLevels[brawlerId] || 1;
+        if (level >= LEVELS) return Infinity;
+        return UPGRADE_COST[level] || 999;
+    }
+
+    function upgradeBrawler(brawlerId) {
+        const level = playerData.brawlerLevels[brawlerId] || 1;
+        if (level >= LEVELS) { alert('⚠️ Максимальный уровень!'); return false; }
+        const cost = getUpgradeCost(brawlerId);
+        if (playerData.powerPoints < cost) { alert(`❌ Нужно ${cost}⭐`); return false; }
+        
+        playerData.powerPoints -= cost;
+        playerData.brawlerLevels[brawlerId] = level + 1;
+        
+        const b = ALL_BRAWLERS.find(b => b.id === brawlerId);
+        if (b) {
+            const newLevel = playerData.brawlerLevels[brawlerId];
+            const hpMultiplier = 1 + (newLevel - 1) * HP_PER_LEVEL;
+            const speedMultiplier = 1 + (newLevel - 1) * SPEED_PER_LEVEL;
+            playerData.brawlerStats[brawlerId].hp = Math.floor(b.baseHp * hpMultiplier);
+            playerData.brawlerStats[brawlerId].speed = Math.round((b.baseSpeed * speedMultiplier) * 1000) / 1000;
+            playerData.brawlerStats[brawlerId].level = newLevel;
+        }
+        
+        forceSave();
+        showSaveStatus(`✅ Уровень ${playerData.brawlerLevels[brawlerId]}`);
+        updateUI();
+        return true;
+    }
+
+    // ============================================================
+    //  ⭐ РАСКРЫТИЕ БОЙЦА
+    // ============================================================
+    function revealSecretBrawler(brawlerId) {
+        const b = ALL_BRAWLERS.find(b => b.id === brawlerId);
+        if (!b) return;
+        const idx = ALL_BRAWLERS.indexOf(b);
+        if (idx >= 1 && idx <= 10) {
+            const secretIdx = idx - 1;
+            b.name = SECRET_NAMES[secretIdx % SECRET_NAMES.length];
+            b.icon = SECRET_ICONS[secretIdx % SECRET_ICONS.length];
+            b.description = SECRET_DESCRIPTIONS[secretIdx % SECRET_DESCRIPTIONS.length];
+            b.color = SECRET_COLORS[secretIdx % SECRET_COLORS.length];
+        }
+        playerData.brawlerLevels[b.id] = 1;
+        playerData.brawlerStarPowers[b.id] = [];
+        playerData.brawlerHypercharge[b.id] = false;
+        const hpMultiplier = 1 + (1 - 1) * HP_PER_LEVEL;
+        const speedMultiplier = 1 + (1 - 1) * SPEED_PER_LEVEL;
+        playerData.brawlerStats[b.id] = {
+            hp: Math.floor(b.baseHp * hpMultiplier),
+            speed: Math.round((b.baseSpeed * speedMultiplier) * 1000) / 1000,
+            unlocked: true,
+            name: b.name,
+            color: b.color,
+            rarity: b.rarity,
+            icon: b.icon,
+            description: b.description,
+            baseHp: b.baseHp,
+            baseSpeed: b.baseSpeed,
+            starPowers: b.starPowers || [],
+            hypercharge: b.hypercharge || null,
+            level: 1,
+            maxLevel: LEVELS
+        };
+        playerData.ownedBrawlers.push(b.id);
+        forceSave();
+        showSaveStatus(`🎉 Новый боец ${b.name}!`);
+        updateUI();
+    }
+
+    // ============================================================
+    //  ⭐ ОТКРЫТИЕ ЯЩИКА
+    // ============================================================
+    function getRandomRarity() {
+        const roll = Math.random();
+        let cumulative = 0;
+        for (const [rarity, chance] of Object.entries(RARITY_CHANCES)) {
+            cumulative += chance;
+            if (roll <= cumulative) return rarity;
+        }
+        return 'Редкий';
+    }
+
+    function getBrawlerByRarity(rarity) {
+        const available = ALL_BRAWLERS.filter(b => !playerData.ownedBrawlers.includes(b.id) && b.rarity === rarity && b.id !== 'shelly');
+        if (available.length === 0) return null;
+        return available[Math.floor(Math.random() * available.length)];
+    }
+
+    function openChest() {
+        if (playerData.chests <= 0) return;
+        playerData.chests--;
+        updateUI();
+        
+        audio.playChestOpen();
+        const overlay = document.getElementById('chestOpenOverlay');
+        const result = document.getElementById('chestResult');
+        const closeBtn = document.getElementById('chestCloseBtn');
+        
+        overlay.classList.add('show');
+        result.innerHTML = '🎁 Открытие...';
+        closeBtn.classList.remove('show');
+        
+        setTimeout(() => {
+            const lockedBrawlers = ALL_BRAWLERS.filter(b => !playerData.ownedBrawlers.includes(b.id) && b.id !== 'shelly');
+            let drop = null;
+            let isNewBrawler = false;
+            
+            if (lockedBrawlers.length > 0) {
+                const rarity = getRandomRarity();
+                const brawler = getBrawlerByRarity(rarity);
+                if (brawler) {
+                    revealSecretBrawler(brawler.id);
+                    drop = { type: 'brawler', brawler: brawler, icon: brawler.icon || '⭐', name: `НОВЫЙ БОЕЦ: ${brawler.name}! 🎉`, rarity: brawler.rarity, legendary: brawler.rarity === 'Легендарный' };
+                    isNewBrawler = true;
+                }
+            }
+            
+            if (!drop) {
+                const dropRoll = Math.random();
+                if (dropRoll < 0.50) {
+                    const amounts = [50, 75, 100, 150];
+                    drop = { type: 'coins', amount: amounts[Math.floor(Math.random() * amounts.length)], icon: '🪙', name: `${amounts[Math.floor(Math.random() * amounts.length)]} монет` };
+                } else if (dropRoll < 0.80) {
+                    const amounts = [10, 15, 20, 30];
+                    drop = { type: 'power', amount: amounts[Math.floor(Math.random() * amounts.length)], icon: '⭐', name: `${amounts[Math.floor(Math.random() * amounts.length)]} очков силы` };
+                } else {
+                    const amounts = [20, 30, 50];
+                    drop = { type: 'coins', amount: amounts[Math.floor(Math.random() * amounts.length)], icon: '🪙', name: `${amounts[Math.floor(Math.random() * amounts.length)]} монет (редкий)` };
+                }
+            }
+            
+            if (drop.type === 'coins') playerData.coins += drop.amount;
+            else if (drop.type === 'power') playerData.powerPoints += drop.amount;
+            
+            forceSave();
+            updateUI();
+            
+            const rarityColors = { 'Обычный': '#aaaaaa', 'Редкий': '#4488ff', 'Суперредкий': '#aa44ff', 'Эпический': '#ff44aa', 'Мифический': '#ff8844', 'Легендарный': '#ffd700' };
+            const rarityColor = rarityColors[drop.rarity] || 'white';
+            const isLegendary = drop.legendary || drop.rarity === 'Легендарный';
+            
+            let html = `<div style="font-size:60px;margin-bottom:10px;">${drop.icon}</div><div style="color:${isLegendary ? '#ffd700' : 'white'};font-size:${isLegendary ? '32px' : '28px'};">${drop.name}</div>`;
+            if (isNewBrawler) {
+                html += `<div style="font-size:16px;color:${rarityColor};margin-top:6px;">⭐ Редкость: ${drop.rarity}${drop.rarity === 'Легендарный' ? ' 🌟' : ''}</div>
+                    <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:4px;">❤️ ${drop.brawler.baseHp} HP • ⚡ ${drop.brawler.baseSpeed.toFixed(3)} скорость</div>
+                    <div style="font-size:14px;color:rgba(255,255,255,0.3);margin-top:4px;">${drop.brawler.description || ''}</div>`;
+            }
+            result.innerHTML = html;
+            closeBtn.classList.add('show');
+        }, 1200);
+    }
+
+    // ============================================================
+    //  ⭐ ОБНОВЛЕНИЕ UI
+    // ============================================================
+    function updateUI() {
+        document.getElementById('resCoins').textContent = playerData.coins;
+        document.getElementById('resPower').textContent = playerData.powerPoints;
+        document.getElementById('resChests').textContent = playerData.chests;
+        document.getElementById('chestCountDisplay').textContent = playerData.chests;
+        document.getElementById('chestBadge').textContent = playerData.chests;
+        
+        const brawler = playerData.brawlerStats[playerData.selectedBrawler];
+        document.getElementById('lobbySelectedBrawler').textContent = brawler ? brawler.name : 'ШЕЛЛИ';
+        
+        renderBrawlersGrid();
+    }
+
+    function renderBrawlersGrid() {
+        const grid = document.getElementById('brawlersGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        
+        ALL_BRAWLERS.forEach((b) => {
+            const isUnlocked = playerData.ownedBrawlers.includes(b.id);
+            const isSelected = playerData.selectedBrawler === b.id;
+            const stats = playerData.brawlerStats[b.id];
+            const level = playerData.brawlerLevels[b.id] || 1;
+            const isMaxLevel = level >= LEVELS;
+            const upgradeCost = getUpgradeCost(b.id);
+            const canUpgrade = playerData.powerPoints >= upgradeCost && !isMaxLevel && isUnlocked;
+            
+            const card = document.createElement('div');
+            card.className = 'brawler-card2' + (isSelected ? ' selected2' : '');
+            card.dataset.brawler = b.id;
+            
+            const preview = document.createElement('div');
+            preview.className = 'preview2';
+            if (b.id === 'shelly') { preview.classList.add('shelly2'); preview.textContent = '🔫'; }
+            else if (b.id === 'sharang') { preview.classList.add('sharang2'); preview.textContent = isUnlocked ? '👑' : '❓'; }
+            else {
+                preview.classList.add('mystery');
+                preview.textContent = isUnlocked ? stats.icon || '⭐' : '❓';
+                if (isUnlocked) { preview.style.background = `radial-gradient(circle, #${stats.color.toString(16).padStart(6, '0')}, #${(stats.color & 0x888888).toString(16).padStart(6, '0')})`; }
+                else { preview.style.background = 'radial-gradient(circle, #444, #222)'; }
+            }
+            card.appendChild(preview);
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'name2';
+            nameDiv.textContent = isUnlocked ? stats.name : '???';
+            card.appendChild(nameDiv);
+            
+            const levelDiv = document.createElement('div');
+            levelDiv.className = 'level-display';
+            levelDiv.textContent = isUnlocked ? `📊 Уровень ${level}/${LEVELS}` : '🔒 Заблокирован';
+            card.appendChild(levelDiv);
+            
+            const rarityColors = { 'Обычный': '#aaaaaa', 'Редкий': '#4488ff', 'Суперредкий': '#aa44ff', 'Эпический': '#ff44aa', 'Мифический': '#ff8844', 'Легендарный': '#ffd700' };
+            const rarity = document.createElement('div');
+            rarity.className = 'rarity2';
+            if (isUnlocked) { rarity.innerHTML = `⭐ <span style="color:${rarityColors[stats.rarity] || '#aaaaaa'}">${stats.rarity}</span>`; }
+            else { rarity.textContent = '🔒 Заблокирован'; }
+            card.appendChild(rarity);
+            
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'stats2';
+            if (isUnlocked) { statsDiv.textContent = `❤️ ${stats.hp} HP • ⚡ ${stats.speed.toFixed(3)}`; }
+            else { statsDiv.textContent = 'Выпадает из ящиков'; }
+            card.appendChild(statsDiv);
+            
+            if (isUnlocked && stats.starPowers && stats.starPowers.length > 0) {
+                const spDiv = document.createElement('div');
+                spDiv.className = 'star-powers';
+                stats.starPowers.forEach((sp) => {
+                    const isUnlockedSP = playerData.brawlerStarPowers[b.id]?.includes(sp.id) || false;
+                    const badge = document.createElement('span');
+                    badge.className = 'star-power-badge' + (isUnlockedSP ? ' unlocked' : '');
+                    badge.textContent = `${sp.icon} ${isUnlockedSP ? '✅' : '🔒'}`;
+                    badge.title = `${sp.name}: ${sp.desc}`;
+                    spDiv.appendChild(badge);
+                });
+                card.appendChild(spDiv);
+            }
+            
+            if (isUnlocked && stats.hypercharge) {
+                const hcDiv = document.createElement('div');
+                hcDiv.style.marginTop = '2px';
+                const isUnlockedHC = playerData.brawlerHypercharge[b.id] || false;
+                const badge = document.createElement('span');
+                badge.className = 'hypercharge-badge' + (isUnlockedHC ? ' unlocked' : '');
+                badge.textContent = `${stats.hypercharge.icon} Гиперзаряд ${isUnlockedHC ? '✅' : '🔒'}`;
+                badge.title = `${stats.hypercharge.name}: ${stats.hypercharge.desc}`;
+                hcDiv.appendChild(badge);
+                card.appendChild(hcDiv);
+            }
+            
+            const selectBtn = document.createElement('button');
+            selectBtn.className = 'select-btn2' + (isSelected ? ' active2' : '');
+            selectBtn.textContent = isSelected ? 'Выбран' : (isUnlocked ? 'Выбрать' : '🔒');
+            selectBtn.disabled = !isUnlocked;
+            selectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isUnlocked) {
+                    playerData.selectedBrawler = b.id;
+                    forceSave();
+                    updateUI();
+                }
+            });
+            card.appendChild(selectBtn);
+            
+            if (isUnlocked) {
+                const upgradeBtn = document.createElement('button');
+                upgradeBtn.className = 'upgrade-btn' + (isMaxLevel ? ' max-level' : '');
+                if (isMaxLevel) { upgradeBtn.textContent = '⭐ MAX'; upgradeBtn.disabled = true; }
+                else { upgradeBtn.textContent = `⬆ ${upgradeCost}⭐`; upgradeBtn.disabled = !canUpgrade; }
+                upgradeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (upgradeBrawler(b.id)) { updateUI(); }
+                });
+                card.appendChild(upgradeBtn);
+            }
+            
+            grid.appendChild(card);
+        });
+    }
+
+    // ============================================================
+    //  ⭐ ВКЛАДКИ — ГЛАВНОЕ ИСПРАВЛЕНИЕ
+    // ============================================================
+    function initTabs() {
+        const tabs = document.querySelectorAll('.lobby-tab');
+        const contents = {
+            play: document.getElementById('tabPlay'),
+            brawlers: document.getElementById('tabBrawlers'),
+            shop: document.getElementById('tabShop'),
+            chests: document.getElementById('tabChests')
+        };
+        
+        console.log('🔍 Найдено вкладок:', tabs.length);
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const tabName = this.dataset.tab;
+                console.log('🔄 Переключение на:', tabName);
+                
+                // Убираем активный класс со всех вкладок
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Скрываем всё содержимое
+                Object.values(contents).forEach(el => {
+                    if (el) el.classList.remove('active');
+                });
+                
+                // Показываем нужное
+                const target = contents[tabName];
+                if (target) {
+                    target.classList.add('active');
+                    console.log('✅ Показана вкладка:', tabName);
+                } else {
+                    console.warn('⚠️ Контент не найден:', tabName);
+                }
+            });
+        });
+        
+        // Активируем первую вкладку
+        const activeTab = document.querySelector('.lobby-tab.active');
+        if (activeTab) {
+            activeTab.click();
+        } else if (tabs.length > 0) {
+            tabs[0].click();
+        }
+    }
+
+    // ============================================================
+    //  ⭐ 3D ИГРА
+    // ============================================================
+    let scene3D = null, camera3D = null, renderer3D = null, playerMesh3D = null;
+    let enemies3D = [], bullets3D = [], enemyBullets3D = [], gasRing3D = null;
+    let particles3D = [];
+    let animationId3D = null, isGameRunning3D = false, gameState = {};
+    let mouseWorldPos = new THREE.Vector3(0, 0, 0);
+    let currentMapData = MAPS[0];
+    let selectedMode = 'showdown';
+    let currentMap = 0;
+    let isGameRunning = false;
+
+    const keys = { up: false, down: false, left: false, right: false };
+
+    const enemyTemplates3D = [
+        { name: 'КОЛЬТ', color: 0x4488ff, hat: 'cowboy' },
+        { name: 'БУЛЛ', color: 0xff4444, hat: 'horns' },
+        { name: 'ПОКО', color: 0x44ff88, hat: 'sombrero' },
+        { name: 'ДЖЕККИ', color: 0xff44aa, hat: 'helmet' },
+        { name: 'БРОК', color: 0xff8844, hat: 'bandana' },
+        { name: 'ДИНА', color: 0xff6633, hat: 'pirate' },
+        { name: 'СПАЙК', color: 0x44ff44, hat: 'spikes' },
+        { name: 'КРОУ', color: 0xaa44ff, hat: 'hood' },
+        { name: 'ЛЕОН', color: 0x44ddff, hat: 'mask' },
+        { name: 'СЭНДИ', color: 0xffdd44, hat: 'cap' },
+        { name: 'ШАРАН', color: 0xff44ff, hat: 'crown' }
+    ];
+
+    function createCharacter3D(color, isPlayer = false, hatType = null, brawlerType = 'shelly') {
+        const group = new THREE.Group();
+        const bodyGeo = new THREE.SphereGeometry(1, 16, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.3 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.8; body.castShadow = true; group.add(body);
+        
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const eyeGeo = new THREE.SphereGeometry(0.3, 8, 8);
+        const pupilGeo = new THREE.SphereGeometry(0.15, 8, 8);
+        
+        const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(-0.4, 1.05, 0.85); group.add(eyeL);
+        const pupilL = new THREE.Mesh(pupilGeo, pupilMat); pupilL.position.set(-0.4, 1.05, 1.0); group.add(pupilL);
+        const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(0.4, 1.05, 0.85); group.add(eyeR);
+        const pupilR = new THREE.Mesh(pupilGeo, pupilMat); pupilR.position.set(0.4, 1.05, 1.0); group.add(pupilR);
+        
+        const mouthGeo = new THREE.TorusGeometry(0.25, 0.05, 6, 12, Math.PI);
+        const mouthMat = new THREE.MeshStandardMaterial({ color: 0x4a2a0a });
+        const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+        mouth.position.set(0, 0.85, 0.9); mouth.rotation.x = 0.1; group.add(mouth);
+
+        if (isPlayer && brawlerType === 'shelly') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0xcc2233 });
+            const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.0, 0.3, 8), hatMat);
+            hat.position.set(0, 1.5, 0); hat.rotation.x = 0.1; group.add(hat);
+        } else if (isPlayer && brawlerType === 'sharang') {
+            const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
+            const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.2, 8), crownMat);
+            crownBase.position.set(0, 1.5, 0); group.add(crownBase);
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2;
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 4), crownMat);
+                spike.position.set(0.55 * Math.cos(angle), 1.7, 0.55 * Math.sin(angle));
+                group.add(spike);
+            }
+        } else if (hatType === 'crown') {
+            const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
+            const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.2, 8), crownMat);
+            crownBase.position.set(0, 1.5, 0); group.add(crownBase);
+        } else if (hatType === 'cowboy') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a });
+            const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.0, 0.15, 8), hatMat);
+            hat.position.set(0, 1.45, 0); group.add(hat);
+        } else if (hatType === 'horns') {
+            const hornMat = new THREE.MeshStandardMaterial({ color: 0xcc8844 });
+            for (let side of [-1, 1]) {
+                const horn = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.5, 6), hornMat);
+                horn.position.set(side * 0.6, 1.4, 0.2); group.add(horn);
+            }
+        } else if (hatType === 'sombrero') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0x44aa66 });
+            const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 0.15, 8), hatMat);
+            hat.position.set(0, 1.45, 0); group.add(hat);
+        } else if (hatType === 'helmet') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0x8844aa, metalness: 0.3 });
+            const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2), hatMat);
+            helmet.position.set(0, 1.5, 0); helmet.scale.set(1, 0.7, 1); group.add(helmet);
+        } else if (hatType === 'bandana') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0xff8844 });
+            const bandana = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 6, 12), hatMat);
+            bandana.position.set(0, 1.35, 0.1); group.add(bandana);
+        } else if (hatType === 'pirate') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+            const bandana2 = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.08, 6, 12), hatMat);
+            bandana2.position.set(0, 1.35, 0.1); group.add(bandana2);
+        } else if (hatType === 'spikes') {
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x33aa33 });
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 4), spikeMat);
+                spike.position.set(0.7 * Math.cos(angle), 0.8 + 0.3 * Math.sin(angle), 0.7 * Math.sin(angle));
+                group.add(spike);
+            }
+        } else if (hatType === 'hood') {
+            const hoodMat = new THREE.MeshStandardMaterial({ color: 0x6644aa });
+            const hood = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2), hoodMat);
+            hood.position.set(0, 1.5, 0); hood.scale.set(1.2, 0.6, 1.2); group.add(hood);
+        } else if (hatType === 'mask') {
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x3388cc });
+            const mask = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), maskMat);
+            mask.position.set(0, 1.3, 0.9); mask.scale.set(1.2, 0.6, 0.3); group.add(mask);
+        } else if (hatType === 'cap') {
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0xddbb44 });
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.15, 8), hatMat);
+            cap.position.set(0, 1.45, 0.1); group.add(cap);
+        }
+
+        if (isPlayer) {
+            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x6a4a2a, metalness: 0.6 });
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.8, 6), barrelMat);
+            barrel.position.set(0.4, 0.8, 1.0); barrel.rotation.x = Math.PI / 2; group.add(barrel);
+        }
+        return group;
+    }
+
+    function createParticles(position, color, count = 20, speed = 0.1) {
+        const particleGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+        const velocities = [];
+        const c = new THREE.Color(color);
+        
+        for (let i = 0; i < count; i++) {
+            positions[i*3] = position.x + (Math.random() - 0.5) * 0.5;
+            positions[i*3+1] = position.y + (Math.random() - 0.5) * 0.5 + 0.3;
+            positions[i*3+2] = position.z + (Math.random() - 0.5) * 0.5;
+            colors[i*3] = c.r + (Math.random() - 0.5) * 0.2;
+            colors[i*3+1] = c.g + (Math.random() - 0.5) * 0.2;
+            colors[i*3+2] = c.b + (Math.random() - 0.5) * 0.2;
+            velocities.push({ x: (Math.random() - 0.5) * speed, y: Math.random() * speed * 0.5 + 0.05, z: (Math.random() - 0.5) * speed });
+        }
+        
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        
+        const particleMat = new THREE.PointsMaterial({
+            size: 0.15,
+            vertexColors: true,
+            transparent: true,
+            opacity: 1,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        
+        const particleSystem = new THREE.Points(particleGeo, particleMat);
+        scene3D.add(particleSystem);
+        
+        particles3D.push({ mesh: particleSystem, velocities: velocities, life: 60, maxLife: 60 });
+    }
+
+    function updateParticles() {
+        for (let i = particles3D.length - 1; i >= 0; i--) {
+            const p = particles3D[i];
+            p.life--;
+            const pos = p.mesh.geometry.attributes.position;
+            const array = pos.array;
+            for (let j = 0; j < array.length / 3; j++) {
+                array[j*3] += p.velocities[j].x;
+                array[j*3+1] += p.velocities[j].y;
+                array[j*3+2] += p.velocities[j].z;
+                p.velocities[j].y -= 0.002;
+            }
+            pos.needsUpdate = true;
+            p.mesh.material.opacity = p.life / p.maxLife;
+            if (p.life <= 0) {
+                scene3D.remove(p.mesh);
+                p.mesh.geometry.dispose();
+                p.mesh.material.dispose();
+                particles3D.splice(i, 1);
+            }
+        }
+    }
+
+    function createGasRing3D(radius) {
+        if (gasRing3D) { scene3D.remove(gasRing3D); gasRing3D.geometry.dispose(); gasRing3D.material.dispose(); gasRing3D = null; }
+        const geo = new THREE.RingGeometry(radius - 0.5, radius + 1.5, 64);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
+        gasRing3D = new THREE.Mesh(geo, mat);
+        gasRing3D.rotation.x = -Math.PI / 2;
+        gasRing3D.position.y = 0.1;
+        scene3D.add(gasRing3D);
+        const borderGeo = new THREE.RingGeometry(radius - 0.3, radius + 0.3, 64);
+        const borderMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false });
+        const border = new THREE.Mesh(borderGeo, borderMat);
+        border.rotation.x = -Math.PI / 2;
+        border.position.y = 0.15;
+        scene3D.add(border);
+        return border;
+    }
+
+    function spawnEnemy3D() {
+        const maxEnemies = selectedMode === 'duel' ? 1 : 11;
+        if (gameState.enemiesSpawned >= maxEnemies) return;
+        const side = Math.floor(Math.random() * 4);
+        const pad = 5;
+        let x, z;
+        if (side === 0) { x = (Math.random() - 0.5) * 50; z = -30 - pad; }
+        else if (side === 1) { x = 30 + pad; z = (Math.random() - 0.5) * 50; }
+        else if (side === 2) { x = (Math.random() - 0.5) * 50; z = 30 + pad; }
+        else { x = -30 - pad; z = (Math.random() - 0.5) * 50; }
+        
+        let index = selectedMode === 'duel' ? 10 : gameState.enemiesSpawned % enemyTemplates3D.length;
+        const template = enemyTemplates3D[index];
+        const mesh = createCharacter3D(template.color, false, template.hat);
+        mesh.scale.set(1.1, 1.1, 1.1);
+        mesh.position.set(x, 0, z);
+        scene3D.add(mesh);
+        
+        const hpBonus = selectedMode === 'duel' ? 200 : 0;
+        enemies3D.push({ 
+            mesh, x, z, 
+            hp: 40 + Math.random() * 30 + hpBonus, 
+            maxHp: 70 + hpBonus, 
+            speed: 0.04 + Math.random() * 0.025 + (selectedMode === 'duel' ? 0.02 : 0),
+            angle: 0, shootCooldown: 0, 
+            shootDelay: selectedMode === 'duel' ? 20 : (30 + Math.floor(Math.random() * 40)),
+            template
+        });
+        gameState.enemiesSpawned++;
+        gameState.enemiesRemaining = enemies3D.length;
+        updateGameUI();
+    }
+
+    function updateGameUI() {
+        document.getElementById('gameHp').textContent = Math.floor(gameState.hp);
+        document.getElementById('gameKills').textContent = gameState.kills;
+        document.getElementById('gameEnemies').textContent = gameState.enemiesRemaining;
+        document.getElementById('gameEnemiesBottom').textContent = gameState.enemiesRemaining;
+    }
+
+    function shootBullet3D() {
+        if (gameState.isOver || !isGameRunning3D || !renderer3D) return;
+        audio.playShoot();
+        const dx = mouseWorldPos.x - gameState.playerPos.x;
+        const dz = mouseWorldPos.z - gameState.playerPos.z;
+        const len = Math.hypot(dx, dz);
+        if (len < 0.5) return;
+        const normX = dx / len, normZ = dz / len;
+        const geo = new THREE.SphereGeometry(0.3, 8, 8);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffee44, emissive: 0xffee44, emissiveIntensity: 0.5 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(gameState.playerPos.x + normX * 1.8, 0.3, gameState.playerPos.z + normZ * 1.8);
+        scene3D.add(mesh);
+        bullets3D.push({ mesh, x: gameState.playerPos.x + normX * 1.8, z: gameState.playerPos.z + normZ * 1.8, vx: normX * 0.3, vz: normZ * 0.3, life: 130 });
+        gameState.playerPos.angle = Math.atan2(dz, dx);
+        if (playerMesh3D) playerMesh3D.rotation.y = gameState.playerPos.angle;
+    }
+
+    function startGame() {
+        if (!playerData.ownedBrawlers.includes(playerData.selectedBrawler)) {
+            playerData.selectedBrawler = 'shelly';
+            forceSave();
+            updateUI();
+        }
+        document.getElementById('lobbyOverlay').style.display = 'none';
+        document.getElementById('gameOverlay').style.display = 'block';
+        document.getElementById('defeatOverlay').style.display = 'none';
+        document.getElementById('winOverlay').style.display = 'none';
+        if (isMobile) { document.getElementById('touchControls').classList.add('show'); document.getElementById('touchHint').classList.add('show'); }
+        
+        currentMap = Math.floor(Math.random() * MAPS.length);
+        currentMapData = MAPS[currentMap];
+        
+        const brawler = playerData.brawlerStats[playerData.selectedBrawler];
+        const isDuel = selectedMode === 'duel';
+        gameState = {
+            playerPos: { x: 0, z: 0, angle: 0 },
+            hp: brawler ? brawler.hp : 10000,
+            maxHp: brawler ? brawler.hp : 10000,
+            kills: 0,
+            enemiesRemaining: isDuel ? 1 : 11,
+            enemiesSpawned: 0,
+            gasRadius: isDuel ? 40 : 28,
+            gasTimer: 0,
+            frameCount: 0,
+            isOver: false,
+            speed: brawler ? brawler.speed : 0.12,
+            selectedBrawler: playerData.selectedBrawler,
+            mode: selectedMode
+        };
+        cleanupGame3D();
+        initGame3D();
+        updateGameUI();
+        document.getElementById('gameCanvas').focus();
+        window.focus();
+        isGameRunning3D = true;
+        gameLoop3D();
+    }
+
+    function initGame3D() {
+        const container = document.getElementById('gameCanvas');
+        const W = 1000, H = 660, WORLD_SIZE = 60;
+        scene3D = new THREE.Scene();
+        scene3D.background = new THREE.Color(currentMapData.color);
+        scene3D.fog = new THREE.Fog(currentMapData.fogColor, 80, 120);
+        camera3D = new THREE.PerspectiveCamera(45, W / H, 0.1, 200);
+        camera3D.position.set(35, 45, 35);
+        camera3D.lookAt(0, 0, 0);
+        renderer3D = new THREE.WebGLRenderer({ antialias: true });
+        renderer3D.setSize(W, H);
+        renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer3D.shadowMap.enabled = true;
+        renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer3D.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer3D.toneMappingExposure = 1.2;
+        container.innerHTML = '';
+        container.appendChild(renderer3D.domElement);
+        renderer3D.domElement.addEventListener('mousemove', handleMouseMove);
+        renderer3D.domElement.addEventListener('mousedown', handleMouseDown);
+        renderer3D.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+        scene3D.add(ambientLight);
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.8);
+        sunLight.position.set(30, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 120;
+        sunLight.shadow.camera.left = -60;
+        sunLight.shadow.camera.right = 60;
+        sunLight.shadow.camera.top = 60;
+        sunLight.shadow.camera.bottom = -60;
+        scene3D.add(sunLight);
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+        fillLight.position.set(-30, 20, -30);
+        scene3D.add(fillLight);
+
+        const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
+        const groundMat = new THREE.MeshStandardMaterial({ color: currentMapData.groundColor, roughness: 0.8, metalness: 0.1 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(0, -0.5, 0);
+        ground.receiveShadow = true;
+        scene3D.add(ground);
+        const gridHelper = new THREE.GridHelper(WORLD_SIZE, 20, 0x4a9a4a, 0x4a9a4a);
+        gridHelper.position.y = -0.45;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.3;
+        scene3D.add(gridHelper);
+        createGasRing3D(gameState.gasRadius);
+
+        const brawler = playerData.brawlerStats[gameState.selectedBrawler];
+        const color = brawler ? brawler.color : 0xf5c842;
+        playerMesh3D = createCharacter3D(color, true, null, gameState.selectedBrawler);
+        playerMesh3D.scale.set(1.3, 1.3, 1.3);
+        playerMesh3D.position.set(0, 0, 0);
+        scene3D.add(playerMesh3D);
+        
+        const enemyCount = selectedMode === 'duel' ? 1 : 11;
+        for (let i = 0; i < enemyCount; i++) { spawnEnemy3D(); }
+    }
+
+    function handleMouseMove(e) {
+        if (!renderer3D) return;
+        const rect = renderer3D.domElement.getBoundingClientRect();
+        const mouse = new THREE.Vector2();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera3D);
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const point = new THREE.Vector3();
+        raycaster.ray.intersectPlane(plane, point);
+        if (point) { mouseWorldPos.copy(point); }
+    }
+
+    function handleMouseDown(e) { e.preventDefault(); shootBullet3D(); }
+
+    function cleanupGame3D() {
+        if (animationId3D) { cancelAnimationFrame(animationId3D); animationId3D = null; }
+        for (const enemy of enemies3D) {
+            if (enemy.mesh) { scene3D.remove(enemy.mesh); enemy.mesh.traverse((child) => { if (child.isMesh) { child.geometry.dispose(); if (Array.isArray(child.material)) child.material.forEach(m => m.dispose()); else child.material.dispose(); } }); }
+        }
+        enemies3D = [];
+        for (const b of bullets3D) { if (b.mesh) { scene3D.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); } }
+        bullets3D = [];
+        for (const b of enemyBullets3D) { if (b.mesh) { scene3D.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); } }
+        enemyBullets3D = [];
+        for (const p of particles3D) { scene3D.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); }
+        particles3D = [];
+        if (playerMesh3D) { scene3D.remove(playerMesh3D); playerMesh3D.traverse((child) => { if (child.isMesh) { child.geometry.dispose(); if (Array.isArray(child.material)) child.material.forEach(m => m.dispose()); else child.material.dispose(); } }); playerMesh3D = null; }
+        if (gasRing3D) { scene3D.remove(gasRing3D); gasRing3D.geometry.dispose(); gasRing3D.material.dispose(); gasRing3D = null; }
+        if (renderer3D) { renderer3D.dispose(); renderer3D.domElement.removeEventListener('mousemove', handleMouseMove); renderer3D.domElement.removeEventListener('mousedown', handleMouseDown); renderer3D.domElement.remove(); renderer3D = null; }
+        if (scene3D) { scene3D.clear(); scene3D = null; }
+        camera3D = null;
+        isGameRunning3D = false;
+    }
+
+    function exitGame() {
+        isGameRunning3D = false;
+        if (animationId3D) { cancelAnimationFrame(animationId3D); animationId3D = null; }
+        cleanupGame3D();
+        document.getElementById('gameOverlay').style.display = 'none';
+        document.getElementById('defeatOverlay').style.display = 'none';
+        document.getElementById('winOverlay').style.display = 'none';
+        document.getElementById('lobbyOverlay').style.display = 'flex';
+        document.getElementById('touchControls').classList.remove('show');
+        document.getElementById('touchHint').classList.remove('show');
+        updateUI();
+        document.getElementById('gameCanvas').blur();
+        isGameRunning = false;
+    }
+
+    function gameLoop3D() {
+        if (!isGameRunning3D) return;
+        updateGame3D();
+        renderer3D.render(scene3D, camera3D);
+        animationId3D = requestAnimationFrame(gameLoop3D);
+    }
+
+    function updateGame3D() {
+        if (gameState.isOver) return;
+        gameState.frameCount++;
+
+        let dx = 0, dz = 0;
+        if (keys.up) dz -= 1;
+        if (keys.down) dz += 1;
+        if (keys.left) dx -= 1;
+        if (keys.right) dx += 1;
+        if (dx !== 0 || dz !== 0) { const len = Math.hypot(dx, dz); dx /= len; dz /= len; gameState.playerPos.x += dx * gameState.speed; gameState.playerPos.z += dz * gameState.speed; }
+        const limit = 28;
+        gameState.playerPos.x = Math.max(-limit, Math.min(limit, gameState.playerPos.x));
+        gameState.playerPos.z = Math.max(-limit, Math.min(limit, gameState.playerPos.z));
+        if (playerMesh3D) { playerMesh3D.position.set(gameState.playerPos.x, 0, gameState.playerPos.z); playerMesh3D.rotation.y = gameState.playerPos.angle; }
+
+        if (selectedMode !== 'duel' && Math.hypot(gameState.playerPos.x, gameState.playerPos.z) > gameState.gasRadius) {
+            gameState.hp -= 2; updateGameUI();
+            if (gameState.hp <= 0) { gameState.hp = 0; gameState.isOver = true; audio.playDefeat(); showDefeat(); return; }
+        }
+
+        if (selectedMode !== 'duel') {
+            gameState.gasTimer++;
+            if (gameState.gasTimer > 480 && gameState.gasRadius > 7) {
+                gameState.gasRadius -= 0.1;
+                createGasRing3D(gameState.gasRadius);
+                document.getElementById('gameGasWarning').classList.add('show');
+                setTimeout(() => document.getElementById('gameGasWarning').classList.remove('show'), 1500);
+            }
+            if (gameState.gasTimer > 500) gameState.gasTimer = 0;
+        }
+
+        for (let i = bullets3D.length - 1; i >= 0; i--) {
+            const b = bullets3D[i];
+            b.x += b.vx; b.z += b.vz; b.life--;
+            b.mesh.position.set(b.x, 0.3, b.z);
+            if (Math.abs(b.x) > 35 || Math.abs(b.z) > 35 || b.life <= 0) {
+                scene3D.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose();
+                bullets3D.splice(i, 1); continue;
+            }
+            let used = false;
+            for (let j = enemies3D.length - 1; j >= 0; j--) {
+                const e = enemies3D[j];
+                if (Math.hypot(b.x - e.x, b.z - e.z) < 1.4) {
+                    e.hp -= 22;
+                    audio.playHit();
+                    createParticles(new THREE.Vector3(b.x, 0.3, b.z), 0xffdd44, 15, 0.08);
+                    scene3D.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose();
+                    bullets3D.splice(i, 1);
+                    if (e.hp <= 0) {
+                        audio.playKill();
+                        createParticles(new THREE.Vector3(e.x, 0.3, e.z), e.template.color, 30, 0.15);
+                        scene3D.remove(e.mesh);
+                        enemies3D.splice(j, 1);
+                        gameState.kills++;
+                        gameState.enemiesRemaining = enemies3D.length;
+                        updateGameUI();
+                        const maxEnemies = selectedMode === 'duel' ? 1 : 11;
+                        if (enemies3D.length === 0 && gameState.enemiesSpawned >= maxEnemies) {
+                            gameState.isOver = true;
+                            audio.playWin();
+                            playerData.coins += selectedMode === 'duel' ? 80 : 50;
+                            playerData.powerPoints += selectedMode === 'duel' ? 10 : 5;
+                            forceSave();
+                            showSaveStatus(`🏆 Победа! +${selectedMode === 'duel' ? 80 : 50}🪙 +${selectedMode === 'duel' ? 10 : 5}⭐`);
+                            updateUI();
+                            showWin();
+                            return;
+                        }
+                    }
+                    used = true;
+                    break;
+                }
+            }
+            if (used) { continue; }
+        }
+
+        for (const enemy of enemies3D) {
+            const dxE = gameState.playerPos.x - enemy.x;
+            const dzE = gameState.playerPos.z - enemy.z;
+            const distE = Math.hypot(dxE, dzE);
+            if (distE > 0.5) { enemy.x += (dxE / distE) * enemy.speed; enemy.z += (dzE / distE) * enemy.speed; }
+            enemy.mesh.position.set(enemy.x, 0, enemy.z);
+            if (enemy.shootCooldown > 0) enemy.shootCooldown--;
+            if (enemy.shootCooldown <= 0 && distE < 20 && distE > 1) {
+                enemy.shootCooldown = enemy.shootDelay;
+                const normX = dxE / distE, normZ = dzE / distE;
+                const geo = new THREE.SphereGeometry(0.25, 8, 8);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xff4444, emissive: 0xff4444, emissiveIntensity: 0.3 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(enemy.x + normX * 1.5, 0.3, enemy.z + normZ * 1.5);
+                scene3D.add(mesh);
+                enemyBullets3D.push({ mesh, x: enemy.x + normX * 1.5, z: enemy.z + normZ * 1.5, vx: normX * 0.18, vz: normZ * 0.18, life: 160 });
+                enemy.angle = Math.atan2(dzE, dxE);
+                enemy.mesh.rotation.y = enemy.angle;
+            }
+        }
+
+        for (let i = enemyBullets3D.length - 1; i >= 0; i--) {
+            const b = enemyBullets3D[i];
+            b.x += b.vx; b.z += b.vz; b.life--;
+            b.mesh.position.set(b.x, 0.3, b.z);
+            if (Math.abs(b.x) > 35 || Math.abs(b.z) > 35 || b.life <= 0) {
+                scene3D.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose();
+                enemyBullets3D.splice(i, 1); continue;
+            }
+            if (Math.hypot(b.x - gameState.playerPos.x, b.z - gameState.playerPos.z) < 1.4) {
+                gameState.hp -= 10;
+                audio.playHit();
+                createParticles(new THREE.Vector3(b.x, 0.3, b.z), 0xff4444, 15, 0.08);
+                updateGameUI();
+                scene3D.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose();
+                enemyBullets3D.splice(i, 1);
+                if (gameState.hp <= 0) { gameState.hp = 0; gameState.isOver = true; audio.playDefeat(); showDefeat(); return; }
+            }
+        }
+
+        updateParticles();
+
+        if (camera3D) {
+            const target = new THREE.Vector3(gameState.playerPos.x, 0, gameState.playerPos.z);
+            camera3D.position.lerp(new THREE.Vector3(gameState.playerPos.x + 35, 40, gameState.playerPos.z + 35), 0.05);
+            camera3D.lookAt(target);
+        }
+    }
+
+    function showDefeat() {
+        document.getElementById('defeatKills').textContent = gameState.kills;
+        document.getElementById('defeatRank').textContent = '#' + (gameState.enemiesRemaining + 1);
+        document.getElementById('defeatOverlay').style.display = 'flex';
+        isGameRunning3D = false;
+        if (animationId3D) { cancelAnimationFrame(animationId3D); animationId3D = null; }
+    }
+
+    function showWin() {
+        document.getElementById('winKills').textContent = gameState.kills;
+        document.getElementById('winOverlay').style.display = 'flex';
+        forceSave();
+        isGameRunning3D = false;
+        if (animationId3D) { cancelAnimationFrame(animationId3D); animationId3D = null; }
+    }
+
+    // ============================================================
+    //  ⭐ КЛАВИШИ
+    // ============================================================
+    window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (key === 'ArrowUp') { keys.up = true; e.preventDefault(); e.stopPropagation(); }
+        else if (key === 'ArrowDown') { keys.down = true; e.preventDefault(); e.stopPropagation(); }
+        else if (key === 'ArrowLeft') { keys.left = true; e.preventDefault(); e.stopPropagation(); }
+        else if (key === 'ArrowRight') { keys.right = true; e.preventDefault(); e.stopPropagation(); }
+        if (key === 'Escape' && isGameRunning3D) { exitGame(); e.preventDefault(); }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        const key = e.key;
+        if (key === 'ArrowUp') { keys.up = false; e.preventDefault(); e.stopPropagation(); }
+        else if (key === 'ArrowDown') { keys.down = false; e.preventDefault(); e.stopPropagation(); }
+        else if (key === 'ArrowLeft') { keys.left = false; e.preventDefault(); e.stopPropagation(); }
+        else if (key === 'ArrowRight') { keys.right = false; e.preventDefault(); e.stopPropagation(); }
+    });
+
+    // ============================================================
+    //  ⭐ СЕНСОРНОЕ УПРАВЛЕНИЕ
+    // ============================================================
+    const joystickArea = document.getElementById('joystickArea');
+    const joystickKnob = document.getElementById('joystickKnob');
+    const shootBtn = document.getElementById('shootButton');
+    let joystickActive = false;
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) { 
+        document.getElementById('touchControls').classList.add('show'); 
+        document.getElementById('touchHint').classList.add('show'); 
+    }
+
+    function handleJoystickStart(e) { e.preventDefault(); joystickActive = true; handleJoystickMove(e); }
+    function handleJoystickMove(e) {
+        e.preventDefault(); if (!joystickActive) return;
+        const touch = e.touches ? e.touches[0] : e;
+        const rect = joystickArea.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let dx = (touch.clientX - centerX) / (rect.width / 2);
+        let dy = (touch.clientY - centerY) / (rect.height / 2);
+        const maxRadius = 1;
+        const dist = Math.hypot(dx, dy);
+        if (dist > maxRadius) { dx = dx / dist * maxRadius; dy = dy / dist * maxRadius; }
+        const knobX = dx * 35; const knobY = dy * 35;
+        joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+        keys.up = dy < -0.2; keys.down = dy > 0.2; keys.left = dx < -0.2; keys.right = dx > 0.2;
+    }
+    function handleJoystickEnd(e) { e.preventDefault(); joystickActive = false; joystickKnob.style.transform = 'translate(-50%, -50%)'; keys.up = false; keys.down = false; keys.left = false; keys.right = false; }
+
+    joystickArea.addEventListener('touchstart', handleJoystickStart, { passive: false });
+    joystickArea.addEventListener('touchmove', handleJoystickMove, { passive: false });
+    joystickArea.addEventListener('touchend', handleJoystickEnd, { passive: false });
+    joystickArea.addEventListener('touchcancel', handleJoystickEnd, { passive: false });
+    joystickArea.addEventListener('mousedown', (e) => { e.preventDefault(); joystickActive = true; handleJoystickMove(e); });
+    window.addEventListener('mousemove', (e) => { if (joystickActive) handleJoystickMove(e); });
+    window.addEventListener('mouseup', (e) => { if (joystickActive) handleJoystickEnd(e); });
+
+    shootBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (isGameRunning3D && !gameState?.isOver) shootBullet3D(); });
+    shootBtn.addEventListener('mousedown', (e) => { e.preventDefault(); if (isGameRunning3D && !gameState?.isOver) shootBullet3D(); });
+
+    // ============================================================
+    //  ⭐ ИНИЦИАЛИЗАЦИЯ И ЗАПУСК
+    // ============================================================
+    function initGame() {
+        console.log('🚀 Инициализация игры...');
+        
+        const loaded = loadProgress();
+        if (!loaded) {
+            console.log('🆕 Создаём новый профиль');
+            playerData.coins = 0;
+            playerData.powerPoints = 0;
+            playerData.chests = 0;
+            playerData.ownedBrawlers = ['shelly'];
+            playerData.selectedBrawler = 'shelly';
+            playerData.brawlerLevels = {};
+            playerData.brawlerStarPowers = {};
+            playerData.brawlerHypercharge = {};
+            forceSave();
+        }
+        
+        initBrawlers();
+        
+        ALL_BRAWLERS.forEach((b) => {
+            const level = playerData.brawlerLevels[b.id] || 1;
+            const hpMultiplier = 1 + (level - 1) * HP_PER_LEVEL;
+            const speedMultiplier = 1 + (level - 1) * SPEED_PER_LEVEL;
+            if (playerData.brawlerStats[b.id]) {
+                playerData.brawlerStats[b.id].hp = Math.floor(b.baseHp * hpMultiplier);
+                playerData.brawlerStats[b.id].speed = Math.round((b.baseSpeed * speedMultiplier) * 1000) / 1000;
+                playerData.brawlerStats[b.id].level = level;
+                playerData.brawlerStats[b.id].unlocked = playerData.ownedBrawlers.includes(b.id);
+            }
+        });
+        
+        updateUI();
+        initTabs();
+        
+        // КНОПКИ
+        document.getElementById('playMatchBtn').addEventListener('click', startGame);
+        document.getElementById('defeatRetryBtn').addEventListener('click', () => { 
+            document.getElementById('defeatOverlay').style.display = 'none'; 
+            startGame(); 
+        });
+        document.getElementById('defeatMenuBtn').addEventListener('click', exitGame);
+        document.getElementById('winRetryBtn').addEventListener('click', () => { 
+            document.getElementById('winOverlay').style.display = 'none'; 
+            startGame(); 
+        });
+        document.getElementById('winMenuBtn').addEventListener('click', exitGame);
+        
+        // МАГАЗИН
+        document.querySelectorAll('[data-shop]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.shop === 'chest' && playerData.coins >= 100) {
+                    playerData.coins -= 100;
+                    playerData.chests += 1;
+                    forceSave();
+                    showSaveStatus(`🎁 Куплен ящик! Осталось ${playerData.coins}🪙`);
+                    updateUI();
+                } else {
+                    alert('Недостаточно монет! Нужно 100 🪙');
+                }
+            });
+        });
+        
+        // ЯЩИК
+        document.querySelector('#chestOpenBtn .open-btn').addEventListener('click', openChest);
+        document.getElementById('chestCloseBtn').addEventListener('click', () => { 
+            document.getElementById('chestOpenOverlay').classList.remove('show'); 
+        });
+        
+        // РЕЖИМЫ
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedMode = btn.dataset.mode;
+                document.getElementById('modeDesc').textContent = selectedMode === 'showdown' 
+                    ? '🏆 Королевская битва — убей всех врагов и стань чемпионом!' 
+                    : '⚔️ Дуэль 1v1 — сразись с боссом в одиночном бою!';
+            });
+        });
+        
+        // АВТОСОХРАНЕНИЕ
+        setInterval(() => { forceSave(); }, 15000);
+        window.addEventListener('beforeunload', () => { forceSave(); });
+        
+        console.log('✅ Игра успешно загружена!');
+        console.log(`💰 Монет: ${playerData.coins}`);
+        console.log(`⭐ Очков силы: ${playerData.powerPoints}`);
+        console.log(`🎁 Ящиков: ${playerData.chests}`);
+        console.log(`👥 Бойцов: ${playerData.ownedBrawlers.join(', ')}`);
+        
+        document.getElementById('gameCanvas').focus();
+        window.focus();
+    }
+
+    // ЗАПУСК
+    initGame();
+</script>
+</body>
+</html>
